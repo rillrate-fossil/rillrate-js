@@ -1,0 +1,19 @@
+{
+  "name": "@rillrate/rillrate-linux-arm-gnueabihf",
+  "version": "0.3.0",
+  "os": ["linux"],
+  "cpu": ["arm"],
+  "main": "rillrate.linux-arm-gnueabihf.node",
+  "files": ["rillrate.linux-arm-gnueabihf.node"],
+  "description": "rillrate bindings for node.js",
+  "keywords": ["NAPI", "N-API", "Rust", "node-addon", "tracing"],
+  "license": "MIT",
+  "engines": {
+    "node": ">= 10"
+  },
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/",
+    "access": "public"
+  },
+  "repository": "git@github.com:rate-technology/rillrate-js.git"
+}

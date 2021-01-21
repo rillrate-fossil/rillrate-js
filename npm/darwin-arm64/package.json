@@ -1,0 +1,19 @@
+{
+  "name": "@rillrate/rillrate-darwin-arm64",
+  "version": "0.3.0",
+  "os": ["darwin"],
+  "cpu": ["arm64"],
+  "main": "rillrate.darwin-arm64.node",
+  "files": ["rillrate.darwin-arm64.node"],
+  "description": "rillrate bindings for node.js",
+  "keywords": ["NAPI", "N-API", "Rust", "node-addon", "tracing"],
+  "license": "MIT",
+  "engines": {
+    "node": ">= 10"
+  },
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/",
+    "access": "public"
+  },
+  "repository": "git@github.com:rate-technology/rillrate-js.git"
+}

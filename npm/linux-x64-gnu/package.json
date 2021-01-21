@@ -1,0 +1,19 @@
+{
+  "name": "@rillrate/rillrate-linux-x64-gnu",
+  "version": "0.3.0",
+  "os": ["linux"],
+  "cpu": ["x64"],
+  "main": "rillrate.linux-x64-gnu.node",
+  "files": ["rillrate.linux-x64-gnu.node"],
+  "description": "rillrate bindings for node.js",
+  "keywords": ["NAPI", "N-API", "Rust", "node-addon", "tracing"],
+  "license": "MIT",
+  "engines": {
+    "node": ">= 10"
+  },
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/",
+    "access": "public"
+  },
+  "repository": "git@github.com:rate-technology/rillrate-js.git"
+}

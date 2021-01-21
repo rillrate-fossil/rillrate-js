@@ -1,0 +1,19 @@
+{
+  "name": "@rillrate/rillrate-win32-x64-msvc",
+  "version": "0.3.0",
+  "os": ["win32"],
+  "cpu": ["x64"],
+  "main": "rillrate.win32-x64-msvc.node",
+  "files": ["rillrate.win32-x64-msvc.node"],
+  "description": "rillrate bindings for node.js",
+  "keywords": ["NAPI", "N-API", "Rust", "node-addon", "tracing"],
+  "license": "MIT",
+  "engines": {
+    "node": ">= 10"
+  },
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/",
+    "access": "public"
+  },
+  "repository": "git@github.com:rate-technology/rillrate-js.git"
+}

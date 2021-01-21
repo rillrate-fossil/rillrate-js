@@ -1,6 +1,6 @@
 {
   "name": "@rillrate/rillrate-linux-x64-musl",
-  "version": "0.3.0",
+  "version": "0.0.0",
   "os": ["linux"],
   "cpu": ["x64"],
   "main": "rillrate.linux-x64-musl.node",

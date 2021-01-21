@@ -1,6 +1,6 @@
 {
   "name": "@rillrate/rillrate-win32-x64-msvc",
-  "version": "0.3.0",
+  "version": "0.0.0",
   "os": ["win32"],
   "cpu": ["x64"],
   "main": "rillrate.win32-x64-msvc.node",

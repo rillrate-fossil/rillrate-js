@@ -1,6 +1,6 @@
 [package]
 name = "rillrate-js"
-version = "0.3.0"
+version = "0.3.1"
 authors = [
     "Denis Kolodin <deniskolodin@gmail.com>",
     "overfloat <rillrate@gmail.com>",

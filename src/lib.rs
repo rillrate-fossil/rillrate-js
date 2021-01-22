@@ -1,8 +1,11 @@
-use napi::{CallContext, Env, Error, JsObject, JsString, JsUndefined, Result};
+use napi::{
+    CallContext, Env, Error, JsBoolean, JsNumber, JsObject, JsString, JsUndefined, Property, Result,
+};
 use napi_derive::{js_function, module_exports};
 use once_cell::sync::OnceCell;
-use rillrate::rill::providers::GaugeProvider;
+use rillrate::rill::providers::{CounterProvider, GaugeProvider, LogProvider};
 use rillrate::RillRate;
+use std::convert::TryInto;
 
 static RILLRATE: OnceCell<RillRate> = OnceCell::new();
 
@@ -19,29 +22,91 @@ fn install(ctx: CallContext) -> Result<JsUndefined> {
     ctx.env.get_undefined()
 }
 
-#[js_function(1)]
-fn gauge_constructor(ctx: CallContext) -> Result<JsUndefined> {
-    let arg0 = ctx.get::<JsString>(0)?.into_utf8()?.into_owned()?;
-    let mut this: JsObject = ctx.this_unchecked();
-    let path = arg0.parse().map_err(js_err)?;
-    let instance = GaugeProvider::new(path);
-    ctx.env.wrap(&mut this, instance)?;
-    ctx.env.get_undefined()
+macro_rules! js_decl {
+    (@new $cls:ident, $name:ident) => {
+        #[js_function(1)]
+        fn $name(ctx: CallContext) -> Result<JsUndefined> {
+            let arg0 = ctx.get::<JsString>(0)?.into_utf8()?.into_owned()?;
+            let mut this: JsObject = ctx.this_unchecked();
+            let path = arg0.parse().map_err(js_err)?;
+            let instance = $cls::new(path);
+            ctx.env.wrap(&mut this, instance)?;
+            ctx.env.get_undefined()
+        }
+    };
+
+    (@bool $cls:ident, $meth:ident, $name:ident) => {
+        #[js_function(1)]
+        fn $name(ctx: CallContext) -> Result<JsBoolean> {
+            let this: JsObject = ctx.this_unchecked();
+            let provider: &mut $cls = ctx.env.unwrap(&this)?;
+            ctx.env.get_boolean(provider.$meth())
+        }
+    };
+
+    (@f64 $cls:ident, $meth:ident, $name:ident) => {
+        #[js_function(1)]
+        fn $name(ctx: CallContext) -> Result<JsUndefined> {
+            let arg0: f64 = ctx.get::<JsNumber>(0)?.try_into()?;
+            let this: JsObject = ctx.this_unchecked();
+            let provider: &mut $cls = ctx.env.unwrap(&this)?;
+            provider.$meth(arg0, None);
+            ctx.env.get_undefined()
+        }
+    };
+
+    (@str $cls:ident, $meth:ident, $name:ident) => {
+        #[js_function(1)]
+        fn $name(ctx: CallContext) -> Result<JsUndefined> {
+            let arg0 = ctx.get::<JsString>(0)?.into_utf8()?.into_owned()?;
+            let this: JsObject = ctx.this_unchecked();
+            let provider: &mut $cls = ctx.env.unwrap(&this)?;
+            provider.$meth(arg0, None);
+            ctx.env.get_undefined()
+        }
+    };
 }
+
+js_decl!(@new GaugeProvider, gauge_constructor);
+js_decl!(@bool GaugeProvider, is_active, gauge_is_active);
+js_decl!(@f64 GaugeProvider, inc, gauge_inc);
+js_decl!(@f64 GaugeProvider, dec, gauge_dec);
+js_decl!(@f64 GaugeProvider, set, gauge_set);
+
+js_decl!(@new CounterProvider, counter_constructor);
+js_decl!(@bool CounterProvider, is_active, counter_is_active);
+js_decl!(@f64 CounterProvider, inc, counter_inc);
+
+js_decl!(@new LogProvider, logger_constructor);
+js_decl!(@bool CounterProvider, is_active, logger_is_active);
+js_decl!(@str LogProvider, log, logger_log);
 
 #[module_exports]
 fn init(mut exports: JsObject, env: Env) -> Result<()> {
     exports.create_named_method("install", install)?;
 
-    let gauge_class = env.define_class(
-        "Gauge",
-        gauge_constructor,
-        &[
-      //Property::new(&env, "addCount")?.with_method(add_count),
-      //Property::new(&env, "addNativeCount")?.with_method(add_native_count),
-    ],
-    )?;
+    let gauge_props = [
+        Property::new(&env, "isActive")?.with_method(gauge_is_active),
+        Property::new(&env, "inc")?.with_method(gauge_inc),
+        Property::new(&env, "dec")?.with_method(gauge_dec),
+        Property::new(&env, "set")?.with_method(gauge_set),
+    ];
+    let gauge_class = env.define_class("Gauge", gauge_constructor, &gauge_props)?;
     exports.set_named_property("Gauge", gauge_class)?;
+
+    let counter = [
+        Property::new(&env, "isActive")?.with_method(counter_is_active),
+        Property::new(&env, "inc")?.with_method(counter_inc),
+    ];
+    let counter_class = env.define_class("Counter", counter_constructor, &counter)?;
+    exports.set_named_property("Counter", counter_class)?;
+
+    let logger = [
+        Property::new(&env, "isActive")?.with_method(logger_is_active),
+        Property::new(&env, "log")?.with_method(logger_log),
+    ];
+    let logger_class = env.define_class("Logger", logger_constructor, &logger)?;
+    exports.set_named_property("Logger", logger_class)?;
 
     Ok(())
 }

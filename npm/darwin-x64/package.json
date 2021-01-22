@@ -1,10 +1,10 @@
 {
-  "name": "@rillrate/package-template-darwin-x64",
+  "name": "@rillrate/rillrate-darwin-x64",
   "version": "0.0.0",
   "os": ["darwin"],
   "cpu": ["x64"],
-  "main": "package-template.darwin-x64.node",
-  "files": ["package-template.darwin-x64.node"],
+  "main": "rillrate.darwin-x64.node",
+  "files": ["rillrate.darwin-x64.node"],
   "description": "rillrate bindings for node.js",
   "keywords": ["NAPI", "N-API", "Rust", "node-addon", "tracing"],
   "license": "MIT",

@@ -1,5 +1,10 @@
 # rillrate-js
 
+[![npm][npm-badge]][npm-url]
+
+[npm-badge]: https://img.shields.io/npm/v/rillrate.svg?style=flat
+[npm-url]: https://www.npmjs.com/package/@rillrate/rillrate
+
 Dynamic tracing system that tends to be real-time.
 
 Node.js bindings.
@@ -15,13 +20,13 @@ npm install --save @rillrate/rillrate
 Import it in your code and install a tracer:
 
 ```js
-rillrate = require('@rillrate/rillrate');
-rillrate.install();
+rillrate = require('@rillrate/rillrate')
+rillrate.install()
 ```
 
 Add a metric and use methods to update it:
 
 ```js
-gauge = new rillrate.Gauge("my.gauge");
-gauge.set(123.0);
+gauge = new rillrate.Gauge('my.gauge')
+gauge.set(123.0)
 ```

@@ -3,8 +3,8 @@ use napi::{
 };
 use napi_derive::{js_function, module_exports};
 use once_cell::sync::OnceCell;
-use rillrate::rill::providers::{CounterProvider, GaugeProvider, LogProvider};
 use rillrate::RillRate;
+use rillrate::{Counter, Gauge, Logger};
 use std::convert::TryInto;
 
 static RILLRATE: OnceCell<RillRate> = OnceCell::new();
@@ -28,8 +28,7 @@ macro_rules! js_decl {
         fn $name(ctx: CallContext) -> Result<JsUndefined> {
             let arg0 = ctx.get::<JsString>(0)?.into_utf8()?.into_owned()?;
             let mut this: JsObject = ctx.this_unchecked();
-            let path = arg0.parse().map_err(js_err)?;
-            let instance = $cls::new(path);
+            let instance = $cls::create(&arg0).map_err(js_err)?;
             ctx.env.wrap(&mut this, instance)?;
             ctx.env.get_undefined()
         }
@@ -50,7 +49,7 @@ macro_rules! js_decl {
             let arg0: f64 = ctx.get::<JsNumber>(0)?.try_into()?;
             let this: JsObject = ctx.this_unchecked();
             let provider: &mut $cls = ctx.env.unwrap(&this)?;
-            provider.$meth(arg0, None);
+            provider.$meth(arg0);
             ctx.env.get_undefined()
         }
     };
@@ -61,25 +60,25 @@ macro_rules! js_decl {
             let arg0 = ctx.get::<JsString>(0)?.into_utf8()?.into_owned()?;
             let this: JsObject = ctx.this_unchecked();
             let provider: &mut $cls = ctx.env.unwrap(&this)?;
-            provider.$meth(arg0, None);
+            provider.$meth(arg0);
             ctx.env.get_undefined()
         }
     };
 }
 
-js_decl!(@new GaugeProvider, gauge_constructor);
-js_decl!(@bool GaugeProvider, is_active, gauge_is_active);
-js_decl!(@f64 GaugeProvider, inc, gauge_inc);
-js_decl!(@f64 GaugeProvider, dec, gauge_dec);
-js_decl!(@f64 GaugeProvider, set, gauge_set);
+js_decl!(@new Gauge, gauge_constructor);
+js_decl!(@bool Gauge, is_active, gauge_is_active);
+js_decl!(@f64 Gauge, inc, gauge_inc);
+js_decl!(@f64 Gauge, dec, gauge_dec);
+js_decl!(@f64 Gauge, set, gauge_set);
 
-js_decl!(@new CounterProvider, counter_constructor);
-js_decl!(@bool CounterProvider, is_active, counter_is_active);
-js_decl!(@f64 CounterProvider, inc, counter_inc);
+js_decl!(@new Counter, counter_constructor);
+js_decl!(@bool Counter, is_active, counter_is_active);
+js_decl!(@f64 Counter, inc, counter_inc);
 
-js_decl!(@new LogProvider, logger_constructor);
-js_decl!(@bool CounterProvider, is_active, logger_is_active);
-js_decl!(@str LogProvider, log, logger_log);
+js_decl!(@new Logger, logger_constructor);
+js_decl!(@bool Logger, is_active, logger_is_active);
+js_decl!(@str Logger, log, logger_log);
 
 #[module_exports]
 fn init(mut exports: JsObject, env: Env) -> Result<()> {

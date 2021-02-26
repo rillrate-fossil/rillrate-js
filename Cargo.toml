@@ -19,10 +19,10 @@ description = "rillrate binding for node.js"
 crate-type = ["cdylib"]
 
 [dependencies]
-napi = "1.1.3"
+napi = "1.2.0"
 napi-derive = "1.0.0"
 once_cell = "1.7.0"
-rillrate = "0.20.0"
+rillrate = "0.21.0"
 
 [target.'cfg(all(unix, not(target_env = "musl"), not(target_arch = "aarch64")))'.dependencies]
 jemallocator = { version = "0.3.2", features = ["disable_initial_exec_tls"] }

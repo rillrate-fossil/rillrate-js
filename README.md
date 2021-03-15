@@ -27,6 +27,9 @@ rillrate.install()
 Add a metric and use methods to update it:
 
 ```js
-gauge = new rillrate.Gauge('my.gauge')
-gauge.set(123.0)
+gauge = new rillrate.Gauge('my.gauge', 0, 100)
+gauge.set(55.0)
+
+histogram = new rillrate.Histogram('my.histogram', [10, 20, 50, 100, 200, 500])
+histogram.add(128.0)
 ```

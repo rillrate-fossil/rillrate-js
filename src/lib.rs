@@ -4,7 +4,7 @@ use napi::{
 use napi_derive::{js_function, module_exports};
 use once_cell::sync::OnceCell;
 use rillrate::RillRate;
-use rillrate::{Counter, Gauge, Logger, Pulse};
+use rillrate::{Counter, Dict, Gauge, Logger, Pulse};
 use std::convert::TryInto;
 
 static RILLRATE: OnceCell<RillRate> = OnceCell::new();
@@ -64,6 +64,18 @@ macro_rules! js_decl {
             ctx.env.get_undefined()
         }
     };
+
+    (@two_str $cls:ident, $meth:ident, $name:ident) => {
+        #[js_function(2)]
+        fn $name(ctx: CallContext) -> Result<JsUndefined> {
+            let arg0 = ctx.get::<JsString>(0)?.into_utf8()?.into_owned()?;
+            let arg1 = ctx.get::<JsString>(1)?.into_utf8()?.into_owned()?;
+            let this: JsObject = ctx.this_unchecked();
+            let provider: &mut $cls = ctx.env.unwrap(&this)?;
+            provider.$meth(arg0, arg1);
+            ctx.env.get_undefined()
+        }
+    };
 }
 
 js_decl!(@new Counter, counter_constructor);
@@ -83,6 +95,10 @@ fn gauge_constructor(ctx: CallContext) -> Result<JsUndefined> {
 
 js_decl!(@bool Gauge, is_active, gauge_is_active);
 js_decl!(@f64 Gauge, set, gauge_set);
+
+js_decl!(@new Dict, dict_constructor);
+js_decl!(@bool Dict, is_active, dict_is_active);
+js_decl!(@two_str Dict, set, dict_set);
 
 js_decl!(@new Pulse, pulse_constructor);
 js_decl!(@bool Pulse, is_active, pulse_is_active);

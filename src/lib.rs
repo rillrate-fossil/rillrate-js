@@ -4,7 +4,7 @@ use napi::{
 use napi_derive::{js_function, module_exports};
 use once_cell::sync::OnceCell;
 use rillrate::RillRate;
-use rillrate::{Counter, Gauge, Logger};
+use rillrate::{Counter, Logger, Pulse};
 use std::convert::TryInto;
 
 static RILLRATE: OnceCell<RillRate> = OnceCell::new();
@@ -66,15 +66,15 @@ macro_rules! js_decl {
     };
 }
 
-js_decl!(@new Gauge, gauge_constructor);
-js_decl!(@bool Gauge, is_active, gauge_is_active);
-js_decl!(@f64 Gauge, inc, gauge_inc);
-js_decl!(@f64 Gauge, dec, gauge_dec);
-js_decl!(@f64 Gauge, set, gauge_set);
-
 js_decl!(@new Counter, counter_constructor);
 js_decl!(@bool Counter, is_active, counter_is_active);
 js_decl!(@f64 Counter, inc, counter_inc);
+
+js_decl!(@new Pulse, pulse_constructor);
+js_decl!(@bool Pulse, is_active, pulse_is_active);
+js_decl!(@f64 Pulse, inc, pulse_inc);
+js_decl!(@f64 Pulse, dec, pulse_dec);
+js_decl!(@f64 Pulse, set, pulse_set);
 
 js_decl!(@new Logger, logger_constructor);
 js_decl!(@bool Logger, is_active, logger_is_active);
@@ -84,21 +84,21 @@ js_decl!(@str Logger, log, logger_log);
 fn init(mut exports: JsObject, env: Env) -> Result<()> {
     exports.create_named_method("install", install)?;
 
-    let gauge_props = [
-        Property::new(&env, "isActive")?.with_method(gauge_is_active),
-        Property::new(&env, "inc")?.with_method(gauge_inc),
-        Property::new(&env, "dec")?.with_method(gauge_dec),
-        Property::new(&env, "set")?.with_method(gauge_set),
-    ];
-    let gauge_class = env.define_class("Gauge", gauge_constructor, &gauge_props)?;
-    exports.set_named_property("Gauge", gauge_class)?;
-
     let counter = [
         Property::new(&env, "isActive")?.with_method(counter_is_active),
         Property::new(&env, "inc")?.with_method(counter_inc),
     ];
     let counter_class = env.define_class("Counter", counter_constructor, &counter)?;
     exports.set_named_property("Counter", counter_class)?;
+
+    let pulse_props = [
+        Property::new(&env, "isActive")?.with_method(pulse_is_active),
+        Property::new(&env, "inc")?.with_method(pulse_inc),
+        Property::new(&env, "dec")?.with_method(pulse_dec),
+        Property::new(&env, "set")?.with_method(pulse_set),
+    ];
+    let pulse_class = env.define_class("Pulse", pulse_constructor, &pulse_props)?;
+    exports.set_named_property("Pulse", pulse_class)?;
 
     let logger = [
         Property::new(&env, "isActive")?.with_method(logger_is_active),

@@ -19,16 +19,16 @@ description = "rillrate binding for node.js"
 crate-type = ["cdylib"]
 
 [dependencies]
-napi = "1.2.0"
+napi = "1.3.2"
 napi-derive = "1.0.0"
 once_cell = "1.7.2"
-rillrate = "0.22.0"
+rillrate = "0.23.0"
 
 [target.'cfg(all(unix, not(target_env = "musl"), not(target_arch = "aarch64")))'.dependencies]
 jemallocator = { version = "0.3.2", features = ["disable_initial_exec_tls"] }
 
 [target.'cfg(all(windows, target_arch = "x86_64"))'.dependencies]
-mimalloc = "0.1.24"
+mimalloc = "0.1.25"
 
 [build-dependencies]
 napi-build = "1.0.1"

@@ -4,7 +4,7 @@ use napi::{
 use napi_derive::{js_function, module_exports};
 use once_cell::sync::OnceCell;
 use rillrate::RillRate;
-use rillrate::{Counter, Logger, Pulse};
+use rillrate::{Counter, Gauge, Logger, Pulse};
 use std::convert::TryInto;
 
 static RILLRATE: OnceCell<RillRate> = OnceCell::new();
@@ -70,6 +70,20 @@ js_decl!(@new Counter, counter_constructor);
 js_decl!(@bool Counter, is_active, counter_is_active);
 js_decl!(@f64 Counter, inc, counter_inc);
 
+#[js_function(3)]
+fn gauge_constructor(ctx: CallContext) -> Result<JsUndefined> {
+    let arg0 = ctx.get::<JsString>(0)?.into_utf8()?.into_owned()?;
+    let arg1: f64 = ctx.get::<JsNumber>(1)?.try_into()?;
+    let arg2: f64 = ctx.get::<JsNumber>(2)?.try_into()?;
+    let mut this: JsObject = ctx.this_unchecked();
+    let instance = Gauge::create(&arg0, arg1, arg2).map_err(js_err)?;
+    ctx.env.wrap(&mut this, instance)?;
+    ctx.env.get_undefined()
+}
+
+js_decl!(@bool Gauge, is_active, gauge_is_active);
+js_decl!(@f64 Gauge, set, gauge_set);
+
 js_decl!(@new Pulse, pulse_constructor);
 js_decl!(@bool Pulse, is_active, pulse_is_active);
 js_decl!(@f64 Pulse, inc, pulse_inc);
@@ -90,6 +104,13 @@ fn init(mut exports: JsObject, env: Env) -> Result<()> {
     ];
     let counter_class = env.define_class("Counter", counter_constructor, &counter)?;
     exports.set_named_property("Counter", counter_class)?;
+
+    let gauge = [
+        Property::new(&env, "isActive")?.with_method(gauge_is_active),
+        Property::new(&env, "set")?.with_method(gauge_set),
+    ];
+    let gauge_class = env.define_class("Gauge", gauge_constructor, &gauge)?;
+    exports.set_named_property("Gauge", gauge_class)?;
 
     let pulse_props = [
         Property::new(&env, "isActive")?.with_method(pulse_is_active),

@@ -8,7 +8,7 @@ async function test() {
     install()
 
     counter = new Counter("my.counter");
-    counter.set(1.2);
+    counter.inc(1.2);
 
     gauge = new Gauge("my.gauge", 0, 100);
     gauge.set(20);

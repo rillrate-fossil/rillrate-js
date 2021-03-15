@@ -133,6 +133,7 @@ js_decl!(@str Logger, log, logger_log);
 fn init(mut exports: JsObject, env: Env) -> Result<()> {
     exports.create_named_method("install", install)?;
 
+    // COUNTER
     let counter = [
         Property::new(&env, "isActive")?.with_method(counter_is_active),
         Property::new(&env, "inc")?.with_method(counter_inc),
@@ -140,6 +141,7 @@ fn init(mut exports: JsObject, env: Env) -> Result<()> {
     let counter_class = env.define_class("Counter", counter_constructor, &counter)?;
     exports.set_named_property("Counter", counter_class)?;
 
+    // GAUGE
     let gauge = [
         Property::new(&env, "isActive")?.with_method(gauge_is_active),
         Property::new(&env, "set")?.with_method(gauge_set),
@@ -147,6 +149,15 @@ fn init(mut exports: JsObject, env: Env) -> Result<()> {
     let gauge_class = env.define_class("Gauge", gauge_constructor, &gauge)?;
     exports.set_named_property("Gauge", gauge_class)?;
 
+    // HISTOGRAM
+    let histogram = [
+        Property::new(&env, "isActive")?.with_method(histogram_is_active),
+        Property::new(&env, "add")?.with_method(histogram_add),
+    ];
+    let histogram_class = env.define_class("Histogram", histogram_constructor, &histogram)?;
+    exports.set_named_property("Histogram", histogram_class)?;
+
+    // PULSE
     let pulse_props = [
         Property::new(&env, "isActive")?.with_method(pulse_is_active),
         Property::new(&env, "inc")?.with_method(pulse_inc),
@@ -156,6 +167,15 @@ fn init(mut exports: JsObject, env: Env) -> Result<()> {
     let pulse_class = env.define_class("Pulse", pulse_constructor, &pulse_props)?;
     exports.set_named_property("Pulse", pulse_class)?;
 
+    // DICT
+    let dict = [
+        Property::new(&env, "isActive")?.with_method(dict_is_active),
+        Property::new(&env, "set")?.with_method(dict_set),
+    ];
+    let dict_class = env.define_class("Dict", dict_constructor, &dict)?;
+    exports.set_named_property("Dict", dict_class)?;
+
+    // LOGGER
     let logger = [
         Property::new(&env, "isActive")?.with_method(logger_is_active),
         Property::new(&env, "log")?.with_method(logger_log),

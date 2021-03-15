@@ -4,7 +4,7 @@ use napi::{
 use napi_derive::{js_function, module_exports};
 use once_cell::sync::OnceCell;
 use rillrate::RillRate;
-use rillrate::{Counter, Dict, Gauge, Logger, Pulse};
+use rillrate::{Counter, Dict, Gauge, Histogram, Logger, Pulse};
 use std::convert::TryInto;
 
 static RILLRATE: OnceCell<RillRate> = OnceCell::new();
@@ -96,15 +96,34 @@ fn gauge_constructor(ctx: CallContext) -> Result<JsUndefined> {
 js_decl!(@bool Gauge, is_active, gauge_is_active);
 js_decl!(@f64 Gauge, set, gauge_set);
 
-js_decl!(@new Dict, dict_constructor);
-js_decl!(@bool Dict, is_active, dict_is_active);
-js_decl!(@two_str Dict, set, dict_set);
-
 js_decl!(@new Pulse, pulse_constructor);
 js_decl!(@bool Pulse, is_active, pulse_is_active);
 js_decl!(@f64 Pulse, inc, pulse_inc);
 js_decl!(@f64 Pulse, dec, pulse_dec);
 js_decl!(@f64 Pulse, set, pulse_set);
+
+#[js_function(2)]
+fn histogram_constructor(ctx: CallContext) -> Result<JsUndefined> {
+    let arg0 = ctx.get::<JsString>(0)?.into_utf8()?.into_owned()?;
+    let arg1 = ctx.get::<JsObject>(1)?;
+    let len = arg1.get_array_length()?;
+    let mut levels = Vec::new();
+    for idx in 0..len {
+        let value: f64 = arg1.get_element::<JsNumber>(idx)?.try_into()?;
+        levels.push(value);
+    }
+    let mut this: JsObject = ctx.this_unchecked();
+    let instance = Histogram::create(&arg0, &levels).map_err(js_err)?;
+    ctx.env.wrap(&mut this, instance)?;
+    ctx.env.get_undefined()
+}
+
+js_decl!(@bool Histogram, is_active, histogram_is_active);
+js_decl!(@f64 Histogram, add, histogram_add);
+
+js_decl!(@new Dict, dict_constructor);
+js_decl!(@bool Dict, is_active, dict_is_active);
+js_decl!(@two_str Dict, set, dict_set);
 
 js_decl!(@new Logger, logger_constructor);
 js_decl!(@bool Logger, is_active, logger_is_active);

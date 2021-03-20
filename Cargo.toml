@@ -19,6 +19,7 @@ description = "rillrate binding for node.js"
 crate-type = ["cdylib"]
 
 [dependencies]
+derive_more = "0.99.11"
 napi = "1.3.2"
 napi-derive = "1.0.0"
 once_cell = "1.7.2"

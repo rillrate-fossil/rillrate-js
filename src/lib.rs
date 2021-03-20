@@ -1,3 +1,4 @@
+use derive_more::{Deref, DerefMut};
 use napi::{
     CallContext, Env, Error, JsBoolean, JsNumber, JsObject, JsString, JsUndefined, Property, Result,
 };
@@ -12,6 +13,14 @@ static RILLRATE: OnceCell<RillRate> = OnceCell::new();
 fn js_err(reason: impl ToString) -> Error {
     Error::from_reason(reason.to_string())
 }
+
+/// The normal `CallContext` that is have to be.
+#[derive(Deref, DerefMut)]
+struct Context<'a> {
+    ctx: CallContext<'a>,
+}
+
+impl<'a> Context<'a> {}
 
 #[js_function]
 fn install(ctx: CallContext) -> Result<JsUndefined> {
@@ -96,7 +105,16 @@ fn gauge_constructor(ctx: CallContext) -> Result<JsUndefined> {
 js_decl!(@bool Gauge, is_active, gauge_is_active);
 js_decl!(@f64 Gauge, set, gauge_set);
 
-js_decl!(@new Pulse, pulse_constructor);
+#[js_function(1)]
+fn pulse_constructor(ctx: CallContext) -> Result<JsUndefined> {
+    let arg0 = ctx.get::<JsString>(0)?.into_utf8()?.into_owned()?;
+    let mut this: JsObject = ctx.this_unchecked();
+    // TODO: Try to get depth from args
+    let instance = Pulse::create(&arg0, None).map_err(js_err)?;
+    ctx.env.wrap(&mut this, instance)?;
+    ctx.env.get_undefined()
+}
+
 js_decl!(@bool Pulse, is_active, pulse_is_active);
 js_decl!(@f64 Pulse, inc, pulse_inc);
 js_decl!(@f64 Pulse, dec, pulse_dec);

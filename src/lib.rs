@@ -20,7 +20,19 @@ struct Context<'a> {
     ctx: CallContext<'a>,
 }
 
-impl<'a> Context<'a> {}
+impl<'a> Context<'a> {
+    fn wrap(ctx: CallContext<'a>) -> Self {
+        Self { ctx }
+    }
+
+    fn get_string(&self, arg: usize) -> Result<String> {
+        self.ctx.get::<JsString>(arg)?.into_utf8()?.into_owned()
+    }
+
+    fn get_number(&self, arg: usize) -> Result<f64> {
+        self.ctx.get::<JsNumber>(arg)?.try_into()
+    }
+}
 
 #[js_function]
 fn install(ctx: CallContext) -> Result<JsUndefined> {
@@ -35,7 +47,8 @@ macro_rules! js_decl {
     (@new $cls:ident, $name:ident) => {
         #[js_function(1)]
         fn $name(ctx: CallContext) -> Result<JsUndefined> {
-            let arg0 = ctx.get::<JsString>(0)?.into_utf8()?.into_owned()?;
+            let ctx = Context::wrap(ctx);
+            let arg0 = ctx.get_string(0)?;
             let mut this: JsObject = ctx.this_unchecked();
             let instance = $cls::create(&arg0).map_err(js_err)?;
             ctx.env.wrap(&mut this, instance)?;
@@ -66,7 +79,8 @@ macro_rules! js_decl {
     (@str $cls:ident, $meth:ident, $name:ident) => {
         #[js_function(1)]
         fn $name(ctx: CallContext) -> Result<JsUndefined> {
-            let arg0 = ctx.get::<JsString>(0)?.into_utf8()?.into_owned()?;
+            let ctx = Context::wrap(ctx);
+            let arg0 = ctx.get_string(0)?;
             let this: JsObject = ctx.this_unchecked();
             let provider: &mut $cls = ctx.env.unwrap(&this)?;
             provider.$meth(arg0);
@@ -77,8 +91,9 @@ macro_rules! js_decl {
     (@two_str $cls:ident, $meth:ident, $name:ident) => {
         #[js_function(2)]
         fn $name(ctx: CallContext) -> Result<JsUndefined> {
-            let arg0 = ctx.get::<JsString>(0)?.into_utf8()?.into_owned()?;
-            let arg1 = ctx.get::<JsString>(1)?.into_utf8()?.into_owned()?;
+            let ctx = Context::wrap(ctx);
+            let arg0 = ctx.get_string(0)?;
+            let arg1 = ctx.get_string(1)?;
             let this: JsObject = ctx.this_unchecked();
             let provider: &mut $cls = ctx.env.unwrap(&this)?;
             provider.$meth(arg0, arg1);
@@ -93,9 +108,10 @@ js_decl!(@f64 Counter, inc, counter_inc);
 
 #[js_function(3)]
 fn gauge_constructor(ctx: CallContext) -> Result<JsUndefined> {
-    let arg0 = ctx.get::<JsString>(0)?.into_utf8()?.into_owned()?;
-    let arg1: f64 = ctx.get::<JsNumber>(1)?.try_into()?;
-    let arg2: f64 = ctx.get::<JsNumber>(2)?.try_into()?;
+    let ctx = Context::wrap(ctx);
+    let arg0 = ctx.get_string(0)?;
+    let arg1 = ctx.get_number(1)?;
+    let arg2 = ctx.get_number(2)?;
     let mut this: JsObject = ctx.this_unchecked();
     let instance = Gauge::create(&arg0, arg1, arg2).map_err(js_err)?;
     ctx.env.wrap(&mut this, instance)?;
@@ -107,7 +123,8 @@ js_decl!(@f64 Gauge, set, gauge_set);
 
 #[js_function(1)]
 fn pulse_constructor(ctx: CallContext) -> Result<JsUndefined> {
-    let arg0 = ctx.get::<JsString>(0)?.into_utf8()?.into_owned()?;
+    let ctx = Context::wrap(ctx);
+    let arg0 = ctx.get_string(0)?;
     let mut this: JsObject = ctx.this_unchecked();
     // TODO: Try to get depth from args
     let instance = Pulse::create(&arg0, None).map_err(js_err)?;
@@ -122,7 +139,8 @@ js_decl!(@f64 Pulse, set, pulse_set);
 
 #[js_function(2)]
 fn histogram_constructor(ctx: CallContext) -> Result<JsUndefined> {
-    let arg0 = ctx.get::<JsString>(0)?.into_utf8()?.into_owned()?;
+    let ctx = Context::wrap(ctx);
+    let arg0 = ctx.get_string(0)?;
     let arg1 = ctx.get::<JsObject>(1)?;
     let len = arg1.get_array_length()?;
     let mut levels = Vec::new();

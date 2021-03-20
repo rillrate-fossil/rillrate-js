@@ -32,6 +32,18 @@ impl<'a> Context<'a> {
     fn get_number(&self, arg: usize) -> Result<f64> {
         self.ctx.get::<JsNumber>(arg)?.try_into()
     }
+
+    fn this_as<T: 'static>(&self) -> Result<&T> {
+        let this: JsObject = self.ctx.this_unchecked();
+        let projection: &mut T = self.ctx.env.unwrap(&this)?;
+        Ok(projection)
+    }
+
+    fn assign<T: 'static>(&self, instance: T) -> Result<()> {
+        let mut this: JsObject = self.ctx.this_unchecked();
+        self.ctx.env.wrap(&mut this, instance)?;
+        Ok(())
+    }
 }
 
 #[js_function]
@@ -49,9 +61,8 @@ macro_rules! js_decl {
         fn $name(ctx: CallContext) -> Result<JsUndefined> {
             let ctx = Context::wrap(ctx);
             let arg0 = ctx.get_string(0)?;
-            let mut this: JsObject = ctx.this_unchecked();
             let instance = $cls::create(&arg0).map_err(js_err)?;
-            ctx.env.wrap(&mut this, instance)?;
+            ctx.assign(instance)?;
             ctx.env.get_undefined()
         }
     };
@@ -59,8 +70,8 @@ macro_rules! js_decl {
     (@bool $cls:ident, $meth:ident, $name:ident) => {
         #[js_function(1)]
         fn $name(ctx: CallContext) -> Result<JsBoolean> {
-            let this: JsObject = ctx.this_unchecked();
-            let provider: &mut $cls = ctx.env.unwrap(&this)?;
+            let ctx = Context::wrap(ctx);
+            let provider = ctx.this_as::<$cls>()?;
             ctx.env.get_boolean(provider.$meth())
         }
     };
@@ -68,9 +79,9 @@ macro_rules! js_decl {
     (@f64 $cls:ident, $meth:ident, $name:ident) => {
         #[js_function(1)]
         fn $name(ctx: CallContext) -> Result<JsUndefined> {
-            let arg0: f64 = ctx.get::<JsNumber>(0)?.try_into()?;
-            let this: JsObject = ctx.this_unchecked();
-            let provider: &mut $cls = ctx.env.unwrap(&this)?;
+            let ctx = Context::wrap(ctx);
+            let arg0 = ctx.get_number(0)?;
+            let provider = ctx.this_as::<$cls>()?;
             provider.$meth(arg0);
             ctx.env.get_undefined()
         }
@@ -81,8 +92,7 @@ macro_rules! js_decl {
         fn $name(ctx: CallContext) -> Result<JsUndefined> {
             let ctx = Context::wrap(ctx);
             let arg0 = ctx.get_string(0)?;
-            let this: JsObject = ctx.this_unchecked();
-            let provider: &mut $cls = ctx.env.unwrap(&this)?;
+            let provider = ctx.this_as::<$cls>()?;
             provider.$meth(arg0);
             ctx.env.get_undefined()
         }
@@ -94,8 +104,7 @@ macro_rules! js_decl {
             let ctx = Context::wrap(ctx);
             let arg0 = ctx.get_string(0)?;
             let arg1 = ctx.get_string(1)?;
-            let this: JsObject = ctx.this_unchecked();
-            let provider: &mut $cls = ctx.env.unwrap(&this)?;
+            let provider = ctx.this_as::<$cls>()?;
             provider.$meth(arg0, arg1);
             ctx.env.get_undefined()
         }
@@ -112,9 +121,8 @@ fn gauge_constructor(ctx: CallContext) -> Result<JsUndefined> {
     let arg0 = ctx.get_string(0)?;
     let arg1 = ctx.get_number(1)?;
     let arg2 = ctx.get_number(2)?;
-    let mut this: JsObject = ctx.this_unchecked();
     let instance = Gauge::create(&arg0, arg1, arg2).map_err(js_err)?;
-    ctx.env.wrap(&mut this, instance)?;
+    ctx.assign(instance)?;
     ctx.env.get_undefined()
 }
 
@@ -125,10 +133,9 @@ js_decl!(@f64 Gauge, set, gauge_set);
 fn pulse_constructor(ctx: CallContext) -> Result<JsUndefined> {
     let ctx = Context::wrap(ctx);
     let arg0 = ctx.get_string(0)?;
-    let mut this: JsObject = ctx.this_unchecked();
     // TODO: Try to get depth from args
     let instance = Pulse::create(&arg0, None).map_err(js_err)?;
-    ctx.env.wrap(&mut this, instance)?;
+    ctx.assign(instance)?;
     ctx.env.get_undefined()
 }
 
@@ -148,9 +155,8 @@ fn histogram_constructor(ctx: CallContext) -> Result<JsUndefined> {
         let value: f64 = arg1.get_element::<JsNumber>(idx)?.try_into()?;
         levels.push(value);
     }
-    let mut this: JsObject = ctx.this_unchecked();
     let instance = Histogram::create(&arg0, &levels).map_err(js_err)?;
-    ctx.env.wrap(&mut this, instance)?;
+    ctx.assign(instance)?;
     ctx.env.get_undefined()
 }
 

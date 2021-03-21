@@ -3,11 +3,8 @@ use napi::{
     CallContext, Env, Error, JsBoolean, JsNumber, JsObject, JsString, JsUndefined, Property, Result,
 };
 use napi_derive::{js_function, module_exports};
-use once_cell::sync::OnceCell;
 use rillrate::{Col, Counter, Dict, Gauge, Histogram, Logger, Pulse, RillRate, Row, Table};
 use std::convert::TryInto;
-
-static RILLRATE: OnceCell<RillRate> = OnceCell::new();
 
 fn js_err(reason: impl ToString) -> Error {
     Error::from_reason(reason.to_string())
@@ -125,10 +122,14 @@ impl<'a> Context<'a> {
 
 #[js_function]
 fn install(ctx: CallContext) -> Result<JsUndefined> {
-    let rillrate = RillRate::from_env("js").map_err(js_err)?;
-    RILLRATE
-        .set(rillrate)
-        .map_err(|_| js_err("can't install RillRate shared object"))?;
+    // TODO: Support optional name as well
+    RillRate::install("rillrate-js").map_err(js_err)?;
+    ctx.env.get_undefined()
+}
+
+#[js_function]
+fn uninstall(ctx: CallContext) -> Result<JsUndefined> {
+    RillRate::uninstall().map_err(js_err)?;
     ctx.env.get_undefined()
 }
 
@@ -245,6 +246,7 @@ js_decl!(Table::set_cell[3](Row, Col, String) as table_set_cell -> JsUndefined);
 #[module_exports]
 fn init(mut exports: JsObject, env: Env) -> Result<()> {
     exports.create_named_method("install", install)?;
+    exports.create_named_method("uninstall", uninstall)?;
 
     // COUNTER
     let counter = [

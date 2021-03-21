@@ -22,7 +22,6 @@ crate-type = ["cdylib"]
 derive_more = "0.99.11"
 napi = "1.3.2"
 napi-derive = "1.0.0"
-once_cell = "1.7.2"
 rillrate = "0.23.1"
 
 [target.'cfg(all(unix, not(target_env = "musl"), not(target_arch = "aarch64")))'.dependencies]

@@ -1,4 +1,4 @@
-const { install, Counter, Gauge, Pulse, Dict, Logger, Histogram } = require('./index')
+const { install, Counter, Gauge, Pulse, Dict, Logger, Histogram, Table } = require('./index')
 
 function sleep(ms) {
     return new Promise((resolve) => setTimeout(resolve, ms))
@@ -25,7 +25,14 @@ async function test() {
     logger = new Logger("my.logger");
     logger.log("log message");
 
-    await sleep(5000)
+    table = new Table("my.table", [[0, "Column 1"], [1, "Column 2"]]);
+    table.add_row(0);
+    table.add_row(1);
+    table.set_cell(0, 0, "Cell of Row 1");
+    table.set_cell(1, 0, "Cell of Row 2");
+    table.set_cell(1, 1, "has value");
+
+    await sleep(150000)
 }
 
 test()

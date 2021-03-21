@@ -51,6 +51,12 @@ impl FromJs for u32 {
     }
 }
 
+impl FromJs for Col {
+    fn from_js(ctx: &CallContext, idx: usize) -> Result<Self> {
+        u32::from_js(ctx, idx).map(|col| Col(col as u64))
+    }
+}
+
 impl FromJs for Row {
     fn from_js(ctx: &CallContext, idx: usize) -> Result<Self> {
         u32::from_js(ctx, idx).map(|row| Row(row as u64))
@@ -78,10 +84,7 @@ impl FromJs for Vec<(Col, String)> {
         for idx in 0..len {
             let item = obj.get_element::<JsObject>(idx)?;
             let value: u32 = item.get_element::<JsNumber>(0)?.try_into()?;
-            let s: String = item
-                .get_element::<JsString>(idx)?
-                .into_utf8()?
-                .into_owned()?;
+            let s: String = item.get_element::<JsString>(1)?.into_utf8()?.into_owned()?;
             items.push((Col(value as u64), s));
         }
         Ok(items)
@@ -237,6 +240,7 @@ fn table_constructor(ctx: CallContext) -> Result<JsUndefined> {
 js_decl!(Table::is_active[1]() as table_is_active -> JsBoolean);
 js_decl!(Table::add_row[1](Row) as table_add_row -> JsUndefined);
 js_decl!(Table::del_row[1](Row) as table_del_row -> JsUndefined);
+js_decl!(Table::set_cell[3](Row, Col, String) as table_set_cell -> JsUndefined);
 
 #[module_exports]
 fn init(mut exports: JsObject, env: Env) -> Result<()> {
@@ -297,9 +301,7 @@ fn init(mut exports: JsObject, env: Env) -> Result<()> {
         Property::new(&env, "isActive")?.with_method(table_is_active),
         Property::new(&env, "add_row")?.with_method(table_add_row),
         Property::new(&env, "del_row")?.with_method(table_del_row),
-        /*
         Property::new(&env, "set_cell")?.with_method(table_set_cell),
-        */
     ];
     let table_class = env.define_class("Table", table_constructor, &table)?;
     exports.set_named_property("Table", table_class)?;

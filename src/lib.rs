@@ -23,6 +23,12 @@ impl IntoJs<JsUndefined> for () {
     }
 }
 
+impl IntoJs<JsBoolean> for bool {
+    fn into_js(self, ctx: &CallContext) -> Result<JsBoolean> {
+        ctx.env.get_boolean(self)
+    }
+}
+
 trait FromJs: Sized {
     fn from_js(ctx: &CallContext, idx: usize) -> Result<Self>;
 }
@@ -153,25 +159,18 @@ macro_rules! js_decl {
 
     ($cls:ident :: $meth:ident [ $tot:expr ] ( $( $arg_ty:ty ),* ) as $name:ident -> $res_ty:ty) => {
         #[js_function($tot)]
+        //#[allow(dead_code)]
         fn $name(ctx: CallContext) -> Result<$res_ty> {
             let ctx = Context::wrap(ctx);
-            let mut counter = ArgCounter::new();
+            #[allow(unused_mut)]
+            let mut _counter = ArgCounter::new();
             let provider = ctx.this_as::<$cls>()?;
             let res = provider.$meth(
                 $(
-                    <$arg_ty>::from_js(&ctx.ctx, counter.next())?,
+                    <$arg_ty>::from_js(&ctx.ctx, _counter.next())?,
                 ),*
             );
             ctx.into_js(res)
-        }
-    };
-
-    (@bool $cls:ident, $meth:ident, $name:ident) => {
-        #[js_function(1)]
-        fn $name(ctx: CallContext) -> Result<JsBoolean> {
-            let ctx = Context::wrap(ctx);
-            let provider = ctx.this_as::<$cls>()?;
-            ctx.env.get_boolean(provider.$meth())
         }
     };
 
@@ -211,7 +210,7 @@ macro_rules! js_decl {
 }
 
 js_decl!(@new Counter, counter_constructor);
-js_decl!(@bool Counter, is_active, counter_is_active);
+js_decl!(Counter::is_active[1]() as counter_is_active -> JsBoolean);
 js_decl!(@f64 Counter, inc, counter_inc);
 
 #[js_function(3)]
@@ -224,7 +223,7 @@ fn gauge_constructor(ctx: CallContext) -> Result<JsUndefined> {
     ctx.assign(instance)?;
     ctx.env.get_undefined()
 }
-js_decl!(@bool Gauge, is_active, gauge_is_active);
+js_decl!(Gauge::is_active[1]() as gauge_is_active -> JsBoolean);
 js_decl!(@f64 Gauge, set, gauge_set);
 
 #[js_function(1)]
@@ -236,7 +235,7 @@ fn pulse_constructor(ctx: CallContext) -> Result<JsUndefined> {
     ctx.assign(instance)?;
     ctx.env.get_undefined()
 }
-js_decl!(@bool Pulse, is_active, pulse_is_active);
+js_decl!(Pulse::is_active[1]() as pulse_is_active -> JsBoolean);
 js_decl!(@f64 Pulse, inc, pulse_inc);
 js_decl!(@f64 Pulse, dec, pulse_dec);
 js_decl!(@f64 Pulse, set, pulse_set);
@@ -250,15 +249,15 @@ fn histogram_constructor(ctx: CallContext) -> Result<JsUndefined> {
     ctx.assign(instance)?;
     ctx.env.get_undefined()
 }
-js_decl!(@bool Histogram, is_active, histogram_is_active);
+js_decl!(Histogram::is_active[1]() as histogram_is_active -> JsBoolean);
 js_decl!(Histogram::add[1](f64) as histogram_add -> JsUndefined);
 
 js_decl!(@new Dict, dict_constructor);
-js_decl!(@bool Dict, is_active, dict_is_active);
+js_decl!(Dict::is_active[1]() as dict_is_active -> JsBoolean);
 js_decl!(@two_str Dict, set, dict_set);
 
 js_decl!(@new Logger, logger_constructor);
-js_decl!(@bool Logger, is_active, logger_is_active);
+js_decl!(Logger::is_active[1]() as logger_is_active -> JsBoolean);
 js_decl!(Logger::log[1](String) as logger_log -> JsUndefined);
 
 #[js_function(2)]
@@ -270,7 +269,7 @@ fn table_constructor(ctx: CallContext) -> Result<JsUndefined> {
     ctx.assign(instance)?;
     ctx.env.get_undefined()
 }
-js_decl!(@bool Table, is_active, table_is_active);
+js_decl!(Table::is_active[1]() as table_is_active -> JsBoolean);
 js_decl!(Table::add_row[1](Row) as table_add_row -> JsUndefined);
 js_decl!(Table::del_row[1](Row) as table_del_row -> JsUndefined);
 

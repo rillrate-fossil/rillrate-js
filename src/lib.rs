@@ -30,6 +30,19 @@ impl Extractable for f64 {
     }
 }
 
+impl Extractable for Vec<f64> {
+    fn extract(ctx: &CallContext, idx: usize) -> Result<Self> {
+        let obj = ctx.get::<JsObject>(idx)?;
+        let len = obj.get_array_length()?;
+        let mut list = Vec::new();
+        for idx in 0..len {
+            let value: f64 = obj.get_element::<JsNumber>(idx)?.try_into()?;
+            list.push(value);
+        }
+        Ok(list)
+    }
+}
+
 /// The normal `CallContext` that is have to be.
 #[derive(Deref, DerefMut)]
 struct Context<'a> {
@@ -160,16 +173,8 @@ js_decl!(@f64 Pulse, set, pulse_set);
 fn histogram_constructor(ctx: CallContext) -> Result<JsUndefined> {
     let ctx = Context::wrap(ctx);
     let arg0: String = ctx.extract(0)?;
-
-    let arg1 = ctx.get::<JsObject>(1)?;
-    let len = arg1.get_array_length()?;
-    let mut levels = Vec::new();
-    for idx in 0..len {
-        let value: f64 = arg1.get_element::<JsNumber>(idx)?.try_into()?;
-        levels.push(value);
-    }
-
-    let instance = Histogram::create(&arg0, &levels).map_err(js_err)?;
+    let arg1: Vec<f64> = ctx.extract(1)?;
+    let instance = Histogram::create(&arg0, &arg1).map_err(js_err)?;
     ctx.assign(instance)?;
     ctx.env.get_undefined()
 }

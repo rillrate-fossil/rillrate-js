@@ -34,12 +34,30 @@ impl Extractable for Vec<f64> {
     fn extract(ctx: &CallContext, idx: usize) -> Result<Self> {
         let obj = ctx.get::<JsObject>(idx)?;
         let len = obj.get_array_length()?;
-        let mut list = Vec::new();
+        let mut items = Vec::new();
         for idx in 0..len {
             let value: f64 = obj.get_element::<JsNumber>(idx)?.try_into()?;
-            list.push(value);
+            items.push(value);
         }
-        Ok(list)
+        Ok(items)
+    }
+}
+
+impl Extractable for Vec<(u32, String)> {
+    fn extract(ctx: &CallContext, idx: usize) -> Result<Self> {
+        let obj = ctx.get::<JsObject>(idx)?;
+        let len = obj.get_array_length()?;
+        let mut items = Vec::new();
+        for idx in 0..len {
+            let item = obj.get_element::<JsObject>(idx)?;
+            let value: u32 = item.get_element::<JsNumber>(0)?.try_into()?;
+            let s: String = item
+                .get_element::<JsString>(idx)?
+                .into_utf8()?
+                .into_owned()?;
+            items.push((value, s));
+        }
+        Ok(items)
     }
 }
 

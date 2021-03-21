@@ -14,6 +14,22 @@ fn js_err(reason: impl ToString) -> Error {
     Error::from_reason(reason.to_string())
 }
 
+trait Extractable: Sized {
+    fn extract(ctx: &CallContext, idx: usize) -> Result<Self>;
+}
+
+impl Extractable for String {
+    fn extract(ctx: &CallContext, idx: usize) -> Result<Self> {
+        ctx.get::<JsString>(idx)?.into_utf8()?.into_owned()
+    }
+}
+
+impl Extractable for f64 {
+    fn extract(ctx: &CallContext, idx: usize) -> Result<Self> {
+        ctx.get::<JsNumber>(idx)?.try_into()
+    }
+}
+
 /// The normal `CallContext` that is have to be.
 #[derive(Deref, DerefMut)]
 struct Context<'a> {
@@ -25,12 +41,8 @@ impl<'a> Context<'a> {
         Self { ctx }
     }
 
-    fn get_string(&self, arg: usize) -> Result<String> {
-        self.ctx.get::<JsString>(arg)?.into_utf8()?.into_owned()
-    }
-
-    fn get_number(&self, arg: usize) -> Result<f64> {
-        self.ctx.get::<JsNumber>(arg)?.try_into()
+    fn extract<T: Extractable>(&self, idx: usize) -> Result<T> {
+        T::extract(&self.ctx, idx)
     }
 
     fn this_as<T: 'static>(&self) -> Result<&T> {
@@ -60,7 +72,7 @@ macro_rules! js_decl {
         #[js_function(1)]
         fn $name(ctx: CallContext) -> Result<JsUndefined> {
             let ctx = Context::wrap(ctx);
-            let arg0 = ctx.get_string(0)?;
+            let arg0: String = ctx.extract(0)?;
             let instance = $cls::create(&arg0).map_err(js_err)?;
             ctx.assign(instance)?;
             ctx.env.get_undefined()
@@ -80,7 +92,7 @@ macro_rules! js_decl {
         #[js_function(1)]
         fn $name(ctx: CallContext) -> Result<JsUndefined> {
             let ctx = Context::wrap(ctx);
-            let arg0 = ctx.get_number(0)?;
+            let arg0: f64 = ctx.extract(0)?;
             let provider = ctx.this_as::<$cls>()?;
             provider.$meth(arg0);
             ctx.env.get_undefined()
@@ -91,7 +103,7 @@ macro_rules! js_decl {
         #[js_function(1)]
         fn $name(ctx: CallContext) -> Result<JsUndefined> {
             let ctx = Context::wrap(ctx);
-            let arg0 = ctx.get_string(0)?;
+            let arg0: String = ctx.extract(0)?;
             let provider = ctx.this_as::<$cls>()?;
             provider.$meth(arg0);
             ctx.env.get_undefined()
@@ -102,8 +114,8 @@ macro_rules! js_decl {
         #[js_function(2)]
         fn $name(ctx: CallContext) -> Result<JsUndefined> {
             let ctx = Context::wrap(ctx);
-            let arg0 = ctx.get_string(0)?;
-            let arg1 = ctx.get_string(1)?;
+            let arg0: String = ctx.extract(0)?;
+            let arg1: String = ctx.extract(1)?;
             let provider = ctx.this_as::<$cls>()?;
             provider.$meth(arg0, arg1);
             ctx.env.get_undefined()
@@ -118,9 +130,9 @@ js_decl!(@f64 Counter, inc, counter_inc);
 #[js_function(3)]
 fn gauge_constructor(ctx: CallContext) -> Result<JsUndefined> {
     let ctx = Context::wrap(ctx);
-    let arg0 = ctx.get_string(0)?;
-    let arg1 = ctx.get_number(1)?;
-    let arg2 = ctx.get_number(2)?;
+    let arg0: String = ctx.extract(0)?;
+    let arg1: f64 = ctx.extract(1)?;
+    let arg2: f64 = ctx.extract(2)?;
     let instance = Gauge::create(&arg0, arg1, arg2).map_err(js_err)?;
     ctx.assign(instance)?;
     ctx.env.get_undefined()
@@ -132,7 +144,7 @@ js_decl!(@f64 Gauge, set, gauge_set);
 #[js_function(1)]
 fn pulse_constructor(ctx: CallContext) -> Result<JsUndefined> {
     let ctx = Context::wrap(ctx);
-    let arg0 = ctx.get_string(0)?;
+    let arg0: String = ctx.extract(0)?;
     // TODO: Try to get depth from args
     let instance = Pulse::create(&arg0, None).map_err(js_err)?;
     ctx.assign(instance)?;
@@ -147,7 +159,8 @@ js_decl!(@f64 Pulse, set, pulse_set);
 #[js_function(2)]
 fn histogram_constructor(ctx: CallContext) -> Result<JsUndefined> {
     let ctx = Context::wrap(ctx);
-    let arg0 = ctx.get_string(0)?;
+    let arg0: String = ctx.extract(0)?;
+
     let arg1 = ctx.get::<JsObject>(1)?;
     let len = arg1.get_array_length()?;
     let mut levels = Vec::new();
@@ -155,6 +168,7 @@ fn histogram_constructor(ctx: CallContext) -> Result<JsUndefined> {
         let value: f64 = arg1.get_element::<JsNumber>(idx)?.try_into()?;
         levels.push(value);
     }
+
     let instance = Histogram::create(&arg0, &levels).map_err(js_err)?;
     ctx.assign(instance)?;
     ctx.env.get_undefined()

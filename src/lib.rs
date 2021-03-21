@@ -161,7 +161,6 @@ macro_rules! js_decl {
         #[js_function($tot)]
         fn $name(ctx: CallContext) -> Result<JsUndefined> {
             let ctx = Context::wrap(ctx);
-            #[allow(unused_mut)]
             let mut _counter = ArgCounter::new();
             let instance = $cls::create(
                 $(
@@ -177,7 +176,6 @@ macro_rules! js_decl {
         #[js_function($tot)]
         fn $name(ctx: CallContext) -> Result<$res_ty> {
             let ctx = Context::wrap(ctx);
-            #[allow(unused_mut)]
             let mut _counter = ArgCounter::new();
             let provider = ctx.this_as::<$cls>()?;
             let res = provider.$meth(
@@ -191,33 +189,33 @@ macro_rules! js_decl {
 }
 
 js_decl!(Counter::create[1](String) as counter_constructor);
-js_decl!(Counter::is_active[1]() as counter_is_active -> JsBoolean);
+js_decl!(Counter::is_active[0]() as counter_is_active -> JsBoolean);
 js_decl!(Counter::inc[1](f64) as counter_inc -> JsUndefined);
 
 js_decl!(Gauge::create[3](String, f64, f64) as gauge_constructor);
-js_decl!(Gauge::is_active[1]() as gauge_is_active -> JsBoolean);
+js_decl!(Gauge::is_active[0]() as gauge_is_active -> JsBoolean);
 js_decl!(Gauge::set[1](f64) as gauge_set -> JsUndefined);
 
 js_decl!(Pulse::create[2](String, Option<u32>) as pulse_constructor);
-js_decl!(Pulse::is_active[1]() as pulse_is_active -> JsBoolean);
+js_decl!(Pulse::is_active[0]() as pulse_is_active -> JsBoolean);
 js_decl!(Pulse::inc[1](f64) as pulse_inc -> JsUndefined);
 js_decl!(Pulse::dec[1](f64) as pulse_dec -> JsUndefined);
 js_decl!(Pulse::set[1](f64) as pulse_set -> JsUndefined);
 
 js_decl!(Histogram::create[1](String, Vec<f64>) as histogram_constructor);
-js_decl!(Histogram::is_active[1]() as histogram_is_active -> JsBoolean);
+js_decl!(Histogram::is_active[0]() as histogram_is_active -> JsBoolean);
 js_decl!(Histogram::add[1](f64) as histogram_add -> JsUndefined);
 
 js_decl!(Dict::create[1](String) as dict_constructor);
-js_decl!(Dict::is_active[1]() as dict_is_active -> JsBoolean);
+js_decl!(Dict::is_active[0]() as dict_is_active -> JsBoolean);
 js_decl!(Dict::set[2](String, String) as dict_set -> JsUndefined);
 
 js_decl!(Logger::create[1](String) as logger_constructor);
-js_decl!(Logger::is_active[1]() as logger_is_active -> JsBoolean);
+js_decl!(Logger::is_active[0]() as logger_is_active -> JsBoolean);
 js_decl!(Logger::log[1](String) as logger_log -> JsUndefined);
 
 js_decl!(Table::create[2](String, Vec<(Col, String)>) as table_constructor);
-js_decl!(Table::is_active[1]() as table_is_active -> JsBoolean);
+js_decl!(Table::is_active[0]() as table_is_active -> JsBoolean);
 js_decl!(Table::add_row[1](Row) as table_add_row -> JsUndefined);
 js_decl!(Table::del_row[1](Row) as table_del_row -> JsUndefined);
 js_decl!(Table::set_cell[3](Row, Col, String) as table_set_cell -> JsUndefined);

@@ -159,7 +159,6 @@ macro_rules! js_decl {
 
     ($cls:ident :: $meth:ident [ $tot:expr ] ( $( $arg_ty:ty ),* ) as $name:ident -> $res_ty:ty) => {
         #[js_function($tot)]
-        //#[allow(dead_code)]
         fn $name(ctx: CallContext) -> Result<$res_ty> {
             let ctx = Context::wrap(ctx);
             #[allow(unused_mut)]
@@ -168,21 +167,9 @@ macro_rules! js_decl {
             let res = provider.$meth(
                 $(
                     <$arg_ty>::from_js(&ctx.ctx, _counter.next())?,
-                ),*
+                )*
             );
             ctx.into_js(res)
-        }
-    };
-
-    (@two_str $cls:ident, $meth:ident, $name:ident) => {
-        #[js_function(2)]
-        fn $name(ctx: CallContext) -> Result<JsUndefined> {
-            let ctx = Context::wrap(ctx);
-            let arg0: String = ctx.from_js(0)?;
-            let arg1: String = ctx.from_js(1)?;
-            let provider = ctx.this_as::<$cls>()?;
-            provider.$meth(arg0, arg1);
-            ctx.env.get_undefined()
         }
     };
 }
@@ -232,7 +219,7 @@ js_decl!(Histogram::add[1](f64) as histogram_add -> JsUndefined);
 
 js_decl!(@new Dict, dict_constructor);
 js_decl!(Dict::is_active[1]() as dict_is_active -> JsBoolean);
-js_decl!(@two_str Dict, set, dict_set);
+js_decl!(Dict::set[2](String, String) as dict_set -> JsUndefined);
 
 js_decl!(@new Logger, logger_constructor);
 js_decl!(Logger::is_active[1]() as logger_is_active -> JsBoolean);

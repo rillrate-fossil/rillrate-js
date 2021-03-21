@@ -4,8 +4,7 @@ use napi::{
 };
 use napi_derive::{js_function, module_exports};
 use once_cell::sync::OnceCell;
-use rillrate::RillRate;
-use rillrate::{Counter, Dict, Gauge, Histogram, Logger, Pulse};
+use rillrate::{Col, Counter, Dict, Gauge, Histogram, Logger, Pulse, RillRate, Table};
 use std::convert::TryInto;
 
 static RILLRATE: OnceCell<RillRate> = OnceCell::new();
@@ -43,7 +42,7 @@ impl Extractable for Vec<f64> {
     }
 }
 
-impl Extractable for Vec<(u32, String)> {
+impl Extractable for Vec<(Col, String)> {
     fn extract(ctx: &CallContext, idx: usize) -> Result<Self> {
         let obj = ctx.get::<JsObject>(idx)?;
         let len = obj.get_array_length()?;
@@ -55,7 +54,7 @@ impl Extractable for Vec<(u32, String)> {
                 .get_element::<JsString>(idx)?
                 .into_utf8()?
                 .into_owned()?;
-            items.push((value, s));
+            items.push((Col(value as u64), s));
         }
         Ok(items)
     }
@@ -168,7 +167,6 @@ fn gauge_constructor(ctx: CallContext) -> Result<JsUndefined> {
     ctx.assign(instance)?;
     ctx.env.get_undefined()
 }
-
 js_decl!(@bool Gauge, is_active, gauge_is_active);
 js_decl!(@f64 Gauge, set, gauge_set);
 
@@ -181,7 +179,6 @@ fn pulse_constructor(ctx: CallContext) -> Result<JsUndefined> {
     ctx.assign(instance)?;
     ctx.env.get_undefined()
 }
-
 js_decl!(@bool Pulse, is_active, pulse_is_active);
 js_decl!(@f64 Pulse, inc, pulse_inc);
 js_decl!(@f64 Pulse, dec, pulse_dec);
@@ -196,7 +193,6 @@ fn histogram_constructor(ctx: CallContext) -> Result<JsUndefined> {
     ctx.assign(instance)?;
     ctx.env.get_undefined()
 }
-
 js_decl!(@bool Histogram, is_active, histogram_is_active);
 js_decl!(@f64 Histogram, add, histogram_add);
 
@@ -207,6 +203,17 @@ js_decl!(@two_str Dict, set, dict_set);
 js_decl!(@new Logger, logger_constructor);
 js_decl!(@bool Logger, is_active, logger_is_active);
 js_decl!(@str Logger, log, logger_log);
+
+#[js_function(2)]
+fn table_constructor(ctx: CallContext) -> Result<JsUndefined> {
+    let ctx = Context::wrap(ctx);
+    let arg0: String = ctx.extract(0)?;
+    let arg1: Vec<(Col, String)> = ctx.extract(1)?;
+    let instance = Table::create(&arg0, arg1).map_err(js_err)?;
+    ctx.assign(instance)?;
+    ctx.env.get_undefined()
+}
+js_decl!(@bool Table, is_active, table_is_active);
 
 #[module_exports]
 fn init(mut exports: JsObject, env: Env) -> Result<()> {
@@ -261,6 +268,18 @@ fn init(mut exports: JsObject, env: Env) -> Result<()> {
     ];
     let logger_class = env.define_class("Logger", logger_constructor, &logger)?;
     exports.set_named_property("Logger", logger_class)?;
+
+    // TABLE
+    let table = [
+        Property::new(&env, "isActive")?.with_method(table_is_active),
+        /*
+        Property::new(&env, "add_row")?.with_method(table_add_row),
+        Property::new(&env, "del_row")?.with_method(table_del_row),
+        Property::new(&env, "set_cell")?.with_method(table_set_cell),
+        */
+    ];
+    let table_class = env.define_class("Table", table_constructor, &table)?;
+    exports.set_named_property("Table", table_class)?;
 
     Ok(())
 }

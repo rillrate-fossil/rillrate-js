@@ -109,6 +109,17 @@ macro_rules! js_decl {
         }
     };
 
+    ($cls:ident :: $meth:ident ( $arg_ty:ty ) as $name:ident) => {
+        #[js_function(1)]
+        fn $name(ctx: CallContext) -> Result<JsUndefined> {
+            let ctx = Context::wrap(ctx);
+            let arg0: $arg_ty = ctx.extract(0)?;
+            let provider = ctx.this_as::<$cls>()?;
+            provider.$meth(arg0);
+            ctx.env.get_undefined()
+        }
+    };
+
     (@bool $cls:ident, $meth:ident, $name:ident) => {
         #[js_function(1)]
         fn $name(ctx: CallContext) -> Result<JsBoolean> {
@@ -194,7 +205,7 @@ fn histogram_constructor(ctx: CallContext) -> Result<JsUndefined> {
     ctx.env.get_undefined()
 }
 js_decl!(@bool Histogram, is_active, histogram_is_active);
-js_decl!(@f64 Histogram, add, histogram_add);
+js_decl!(Histogram::add(f64) as histogram_add);
 
 js_decl!(@new Dict, dict_constructor);
 js_decl!(@bool Dict, is_active, dict_is_active);
@@ -202,7 +213,7 @@ js_decl!(@two_str Dict, set, dict_set);
 
 js_decl!(@new Logger, logger_constructor);
 js_decl!(@bool Logger, is_active, logger_is_active);
-js_decl!(@str Logger, log, logger_log);
+js_decl!(Logger::log(String) as logger_log);
 
 #[js_function(2)]
 fn table_constructor(ctx: CallContext) -> Result<JsUndefined> {

@@ -174,28 +174,6 @@ macro_rules! js_decl {
         }
     };
 
-    (@f64 $cls:ident, $meth:ident, $name:ident) => {
-        #[js_function(1)]
-        fn $name(ctx: CallContext) -> Result<JsUndefined> {
-            let ctx = Context::wrap(ctx);
-            let arg0: f64 = ctx.from_js(0)?;
-            let provider = ctx.this_as::<$cls>()?;
-            provider.$meth(arg0);
-            ctx.env.get_undefined()
-        }
-    };
-
-    (@str $cls:ident, $meth:ident, $name:ident) => {
-        #[js_function(1)]
-        fn $name(ctx: CallContext) -> Result<JsUndefined> {
-            let ctx = Context::wrap(ctx);
-            let arg0: String = ctx.from_js(0)?;
-            let provider = ctx.this_as::<$cls>()?;
-            provider.$meth(arg0);
-            ctx.env.get_undefined()
-        }
-    };
-
     (@two_str $cls:ident, $meth:ident, $name:ident) => {
         #[js_function(2)]
         fn $name(ctx: CallContext) -> Result<JsUndefined> {
@@ -211,7 +189,7 @@ macro_rules! js_decl {
 
 js_decl!(@new Counter, counter_constructor);
 js_decl!(Counter::is_active[1]() as counter_is_active -> JsBoolean);
-js_decl!(@f64 Counter, inc, counter_inc);
+js_decl!(Counter::inc[1](f64) as counter_inc -> JsUndefined);
 
 #[js_function(3)]
 fn gauge_constructor(ctx: CallContext) -> Result<JsUndefined> {
@@ -224,7 +202,7 @@ fn gauge_constructor(ctx: CallContext) -> Result<JsUndefined> {
     ctx.env.get_undefined()
 }
 js_decl!(Gauge::is_active[1]() as gauge_is_active -> JsBoolean);
-js_decl!(@f64 Gauge, set, gauge_set);
+js_decl!(Gauge::set[1](f64) as gauge_set -> JsUndefined);
 
 #[js_function(1)]
 fn pulse_constructor(ctx: CallContext) -> Result<JsUndefined> {
@@ -236,9 +214,9 @@ fn pulse_constructor(ctx: CallContext) -> Result<JsUndefined> {
     ctx.env.get_undefined()
 }
 js_decl!(Pulse::is_active[1]() as pulse_is_active -> JsBoolean);
-js_decl!(@f64 Pulse, inc, pulse_inc);
-js_decl!(@f64 Pulse, dec, pulse_dec);
-js_decl!(@f64 Pulse, set, pulse_set);
+js_decl!(Pulse::inc[1](f64) as pulse_inc -> JsUndefined);
+js_decl!(Pulse::dec[1](f64) as pulse_dec -> JsUndefined);
+js_decl!(Pulse::set[1](f64) as pulse_set -> JsUndefined);
 
 #[js_function(2)]
 fn histogram_constructor(ctx: CallContext) -> Result<JsUndefined> {

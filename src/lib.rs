@@ -123,6 +123,22 @@ fn install(ctx: CallContext) -> Result<JsUndefined> {
     ctx.env.get_undefined()
 }
 
+struct ArgCounter {
+    counter: usize,
+}
+
+impl ArgCounter {
+    fn new() -> Self {
+        Self { counter: 0 }
+    }
+
+    fn next(&mut self) -> usize {
+        let last = self.counter;
+        self.counter += 1;
+        last
+    }
+}
+
 macro_rules! js_decl {
     (@new $cls:ident, $name:ident) => {
         #[js_function(1)]
@@ -139,16 +155,11 @@ macro_rules! js_decl {
         #[js_function($tot)]
         fn $name(ctx: CallContext) -> Result<$res_ty> {
             let ctx = Context::wrap(ctx);
-            let mut counter = 0;
-            let mut next = || {
-                let last = counter;
-                counter += 1;
-                last
-            };
+            let mut counter = ArgCounter::new();
             let provider = ctx.this_as::<$cls>()?;
             let res = provider.$meth(
                 $(
-                    <$arg_ty>::from_js(&ctx.ctx, next())?,
+                    <$arg_ty>::from_js(&ctx.ctx, counter.next())?,
                 ),*
             );
             ctx.into_js(res)

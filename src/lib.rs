@@ -60,6 +60,13 @@ impl FromJs for Row {
     }
 }
 
+impl FromJs for Option<u32> {
+    fn from_js(_ctx: &CallContext, _idx: usize) -> Result<Self> {
+        // TODO: Implement it
+        Ok(None)
+    }
+}
+
 impl FromJs for Vec<f64> {
     fn from_js(ctx: &CallContext, idx: usize) -> Result<Self> {
         let obj = ctx.get::<JsObject>(idx)?;
@@ -150,14 +157,19 @@ impl ArgCounter {
 }
 
 macro_rules! js_decl {
-    (@new $cls:ident, $name:ident) => {
-        #[js_function(1)]
+    ($cls:ident :: create [ $tot:expr ] ( $( $arg_ty:ty ),* ) as $name:ident) => {
+        #[js_function($tot)]
         fn $name(ctx: CallContext) -> Result<JsUndefined> {
             let ctx = Context::wrap(ctx);
-            let arg0: String = ctx.from_js(0)?;
-            let instance = $cls::create(&arg0).map_err(js_err)?;
+            #[allow(unused_mut)]
+            let mut _counter = ArgCounter::new();
+            let instance = $cls::create(
+                $(
+                    ctx.from_js::<$arg_ty>(_counter.next())?,
+                )*
+            ).map_err(js_err)?;
             ctx.assign(instance)?;
-            ctx.env.get_undefined()
+            ctx.into_js(())
         }
     };
 
@@ -170,7 +182,7 @@ macro_rules! js_decl {
             let provider = ctx.this_as::<$cls>()?;
             let res = provider.$meth(
                 $(
-                    <$arg_ty>::from_js(&ctx.ctx, _counter.next())?,
+                    ctx.from_js::<$arg_ty>(_counter.next())?,
                 )*
             );
             ctx.into_js(res)
@@ -178,66 +190,33 @@ macro_rules! js_decl {
     };
 }
 
-js_decl!(@new Counter, counter_constructor);
+js_decl!(Counter::create[1](String) as counter_constructor);
 js_decl!(Counter::is_active[1]() as counter_is_active -> JsBoolean);
 js_decl!(Counter::inc[1](f64) as counter_inc -> JsUndefined);
 
-#[js_function(3)]
-fn gauge_constructor(ctx: CallContext) -> Result<JsUndefined> {
-    let ctx = Context::wrap(ctx);
-    let arg0: String = ctx.from_js(0)?;
-    let arg1: f64 = ctx.from_js(1)?;
-    let arg2: f64 = ctx.from_js(2)?;
-    let instance = Gauge::create(&arg0, arg1, arg2).map_err(js_err)?;
-    ctx.assign(instance)?;
-    ctx.env.get_undefined()
-}
+js_decl!(Gauge::create[3](String, f64, f64) as gauge_constructor);
 js_decl!(Gauge::is_active[1]() as gauge_is_active -> JsBoolean);
 js_decl!(Gauge::set[1](f64) as gauge_set -> JsUndefined);
 
-#[js_function(1)]
-fn pulse_constructor(ctx: CallContext) -> Result<JsUndefined> {
-    let ctx = Context::wrap(ctx);
-    let arg0: String = ctx.from_js(0)?;
-    // TODO: Try to get depth from args
-    let instance = Pulse::create(&arg0, None).map_err(js_err)?;
-    ctx.assign(instance)?;
-    ctx.env.get_undefined()
-}
+js_decl!(Pulse::create[2](String, Option<u32>) as pulse_constructor);
 js_decl!(Pulse::is_active[1]() as pulse_is_active -> JsBoolean);
 js_decl!(Pulse::inc[1](f64) as pulse_inc -> JsUndefined);
 js_decl!(Pulse::dec[1](f64) as pulse_dec -> JsUndefined);
 js_decl!(Pulse::set[1](f64) as pulse_set -> JsUndefined);
 
-#[js_function(2)]
-fn histogram_constructor(ctx: CallContext) -> Result<JsUndefined> {
-    let ctx = Context::wrap(ctx);
-    let arg0: String = ctx.from_js(0)?;
-    let arg1: Vec<f64> = ctx.from_js(1)?;
-    let instance = Histogram::create(&arg0, &arg1).map_err(js_err)?;
-    ctx.assign(instance)?;
-    ctx.env.get_undefined()
-}
+js_decl!(Histogram::create[1](String, Vec<f64>) as histogram_constructor);
 js_decl!(Histogram::is_active[1]() as histogram_is_active -> JsBoolean);
 js_decl!(Histogram::add[1](f64) as histogram_add -> JsUndefined);
 
-js_decl!(@new Dict, dict_constructor);
+js_decl!(Dict::create[1](String) as dict_constructor);
 js_decl!(Dict::is_active[1]() as dict_is_active -> JsBoolean);
 js_decl!(Dict::set[2](String, String) as dict_set -> JsUndefined);
 
-js_decl!(@new Logger, logger_constructor);
+js_decl!(Logger::create[1](String) as logger_constructor);
 js_decl!(Logger::is_active[1]() as logger_is_active -> JsBoolean);
 js_decl!(Logger::log[1](String) as logger_log -> JsUndefined);
 
-#[js_function(2)]
-fn table_constructor(ctx: CallContext) -> Result<JsUndefined> {
-    let ctx = Context::wrap(ctx);
-    let arg0: String = ctx.from_js(0)?;
-    let arg1: Vec<(Col, String)> = ctx.from_js(1)?;
-    let instance = Table::create(&arg0, arg1).map_err(js_err)?;
-    ctx.assign(instance)?;
-    ctx.env.get_undefined()
-}
+js_decl!(Table::create[2](String, Vec<(Col, String)>) as table_constructor);
 js_decl!(Table::is_active[1]() as table_is_active -> JsBoolean);
 js_decl!(Table::add_row[1](Row) as table_add_row -> JsUndefined);
 js_decl!(Table::del_row[1](Row) as table_del_row -> JsUndefined);

@@ -135,13 +135,23 @@ macro_rules! js_decl {
         }
     };
 
-    ($cls:ident :: $meth:ident ( $arg_ty:ty ) as $name:ident -> $res_ty:ty) => {
-        #[js_function(1)]
+    ($cls:ident :: $meth:ident [ $tot:expr ] ( $( $arg_ty:ty ),* ) as $name:ident -> $res_ty:ty) => {
+        #[js_function($tot)]
         fn $name(ctx: CallContext) -> Result<$res_ty> {
             let ctx = Context::wrap(ctx);
-            let arg0: $arg_ty = ctx.from_js(0)?;
+            let mut counter = 0;
+            let mut next = || {
+                let last = counter;
+                counter += 1;
+                last
+            };
             let provider = ctx.this_as::<$cls>()?;
-            ctx.into_js(provider.$meth(arg0))
+            let res = provider.$meth(
+                $(
+                    <$arg_ty>::from_js(&ctx.ctx, next())?,
+                ),*
+            );
+            ctx.into_js(res)
         }
     };
 
@@ -230,7 +240,7 @@ fn histogram_constructor(ctx: CallContext) -> Result<JsUndefined> {
     ctx.env.get_undefined()
 }
 js_decl!(@bool Histogram, is_active, histogram_is_active);
-js_decl!(Histogram::add(f64) as histogram_add -> JsUndefined);
+js_decl!(Histogram::add[1](f64) as histogram_add -> JsUndefined);
 
 js_decl!(@new Dict, dict_constructor);
 js_decl!(@bool Dict, is_active, dict_is_active);
@@ -238,7 +248,7 @@ js_decl!(@two_str Dict, set, dict_set);
 
 js_decl!(@new Logger, logger_constructor);
 js_decl!(@bool Logger, is_active, logger_is_active);
-js_decl!(Logger::log(String) as logger_log -> JsUndefined);
+js_decl!(Logger::log[1](String) as logger_log -> JsUndefined);
 
 #[js_function(2)]
 fn table_constructor(ctx: CallContext) -> Result<JsUndefined> {
@@ -250,8 +260,8 @@ fn table_constructor(ctx: CallContext) -> Result<JsUndefined> {
     ctx.env.get_undefined()
 }
 js_decl!(@bool Table, is_active, table_is_active);
-js_decl!(Table::add_row(Row) as table_add_row -> JsUndefined);
-js_decl!(Table::del_row(Row) as table_del_row -> JsUndefined);
+js_decl!(Table::add_row[1](Row) as table_add_row -> JsUndefined);
+js_decl!(Table::del_row[1](Row) as table_del_row -> JsUndefined);
 
 #[module_exports]
 fn init(mut exports: JsObject, env: Env) -> Result<()> {

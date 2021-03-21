@@ -4,7 +4,7 @@ use napi::{
 };
 use napi_derive::{js_function, module_exports};
 use once_cell::sync::OnceCell;
-use rillrate::{Col, Counter, Dict, Gauge, Histogram, Logger, Pulse, RillRate, Table};
+use rillrate::{Col, Counter, Dict, Gauge, Histogram, Logger, Pulse, RillRate, Table, Row};
 use std::convert::TryInto;
 
 static RILLRATE: OnceCell<RillRate> = OnceCell::new();
@@ -26,6 +26,18 @@ impl Extractable for String {
 impl Extractable for f64 {
     fn extract(ctx: &CallContext, idx: usize) -> Result<Self> {
         ctx.get::<JsNumber>(idx)?.try_into()
+    }
+}
+
+impl Extractable for u32 {
+    fn extract(ctx: &CallContext, idx: usize) -> Result<Self> {
+        ctx.get::<JsNumber>(idx)?.try_into()
+    }
+}
+
+impl Extractable for Row {
+    fn extract(ctx: &CallContext, idx: usize) -> Result<Self> {
+        u32::extract(ctx, idx).map(|row| Row(row as u64))
     }
 }
 
@@ -225,6 +237,8 @@ fn table_constructor(ctx: CallContext) -> Result<JsUndefined> {
     ctx.env.get_undefined()
 }
 js_decl!(@bool Table, is_active, table_is_active);
+js_decl!(Table::add_row(Row) as table_add_row);
+js_decl!(Table::del_row(Row) as table_del_row);
 
 #[module_exports]
 fn init(mut exports: JsObject, env: Env) -> Result<()> {
@@ -283,9 +297,9 @@ fn init(mut exports: JsObject, env: Env) -> Result<()> {
     // TABLE
     let table = [
         Property::new(&env, "isActive")?.with_method(table_is_active),
-        /*
         Property::new(&env, "add_row")?.with_method(table_add_row),
         Property::new(&env, "del_row")?.with_method(table_del_row),
+        /*
         Property::new(&env, "set_cell")?.with_method(table_set_cell),
         */
     ];
